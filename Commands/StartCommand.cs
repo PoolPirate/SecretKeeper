@@ -61,7 +61,7 @@ public class StartCommand
             else if (hasSent)
             {
                 await _notifierService.SendNotificationAsync($"Issue Resolved", "New block has been processed");
-                hasSent = true;
+                hasSent = false;
             }
         }
     }
