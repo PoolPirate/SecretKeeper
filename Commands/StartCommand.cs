@@ -43,12 +43,24 @@ public class StartCommand
 
         var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 
+        bool hasSent = false;
+
         while (await timer.WaitForNextTickAsync())
         {
             var blockDelay = DateTimeOffset.UtcNow - _logWatcherService.LastBlockSeenAt;
             if (blockDelay.TotalSeconds > maxSecondsWithoutBlock)
             {
                 _logger.LogWarning("No new block seen for {seconds} seconds", Math.Round(blockDelay.TotalSeconds, 1));
+
+                if (!hasSent)
+                {
+                    await _notifierService.SendNotificationAsync($"Node Desync", $"No new block processed in {Math.Round(blockDelay.TotalSeconds, 1)} seconds");
+                    hasSent = true;
+                }
+            }
+            else
+            {
+                hasSent = false;
             }
         }
     }
