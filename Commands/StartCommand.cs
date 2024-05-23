@@ -78,8 +78,11 @@ public class StartCommand
             case ConsensusFailureType.INVALID_APPHASH:
                 Task.Run(RollbackAndRestartAsync);
                 break;
+            case ConsensusFailureType.SOFTWARE_UPGRADE:
+                Task.Run(async () => await _notifierService.SendNotificationAsync("REQUIRE SOFTWARE UPGRADE", message));
+                break;
             default:
-                Task.Run(() => _notifierService.SendNotificationAsync("Unhandled Consensus Failure", message));
+                Task.Run(async () => await _notifierService.SendNotificationAsync("Unhandled Consensus Failure", message));
                 break;
         }
     }

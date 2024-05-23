@@ -69,6 +69,10 @@ public partial class LogWatcherService
         {
             OnConsensusFailure?.Invoke(ConsensusFailureType.INVALID_APPHASH, message);
         }
+        else if (message.Contains("UPGRADE"))
+        {
+            OnConsensusFailure?.Invoke(ConsensusFailureType.SOFTWARE_UPGRADE, message);
+        }
         else
         {
             OnConsensusFailure?.Invoke(ConsensusFailureType.UNKNOWN, message);
