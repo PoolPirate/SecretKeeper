@@ -20,5 +20,5 @@ Basic resiliency daemon around a [Secret Network](https://github.com/scrtlabs/Se
 --service secret-node #Systemd service name of node
 --discord-user-id  #User id on discord (optional)
 --webhook-url #Discord webhook url (optional)
---maxSecondsWithoutBlock #Maximum seconds without a block before a notification is sent
+--max-seconds-without-block #Maximum seconds without a block before a notification is sent
 ```
