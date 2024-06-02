@@ -25,10 +25,10 @@ public class StartCommand
     }
 
     [Command("start")]
-    public async Task StartAsync(string secretd, string service, string? webhookUrl = null, ulong? discordUserId = null, int maxSecondsWithoutBlock = 100)
+    public async Task StartAsync(string secretd, string service, string? secretdHome = null, string? webhookUrl = null, ulong? discordUserId = null, int maxSecondsWithoutBlock = 100)
     {
         _nodeService = service;
-        _secretdService.Initialize(secretd);
+        _secretdService.Initialize(secretd, secretdHome);
         if (webhookUrl is not null)
         {
             _notifierService.InitializeWebhookUrl(webhookUrl, discordUserId);
@@ -111,9 +111,9 @@ public class StartCommand
         try
         {
             await _systemdService.StopService(_nodeService);
-            await Task.Delay(2000);
+            await Task.Delay(5000);
             await _secretdService.RollbackOneAsync();
-            await Task.Delay(2000);
+            await Task.Delay(5000);
             await _systemdService.StartService(_nodeService);
         }
         catch(Exception ex)
