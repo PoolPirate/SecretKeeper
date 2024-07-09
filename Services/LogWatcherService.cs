@@ -65,7 +65,7 @@ public partial class LogWatcherService
         {
             OnConsensusFailure?.Invoke(ConsensusFailureType.SGX_ERROR_BUSY, message);
         }
-        else if (message.Contains("wrong Block.Header.AppHash"))
+        else if (message.Contains("wrong Block.Header.AppHash") || message.Contains("wrong Block.Header.LastResultsHash"))
         {
             OnConsensusFailure?.Invoke(ConsensusFailureType.INVALID_APPHASH, message);
         }
