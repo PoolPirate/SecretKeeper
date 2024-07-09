@@ -5,7 +5,7 @@ Basic resiliency daemon around a [Secret Network](https://github.com/scrtlabs/Se
 ## Features
 
 - Auto restart on consensus failure `SGX_ERROR_BUSY`
-- Auto rollback & restart on consensus failure `wrong Block.Header.AppHash`
+- Auto rollback & restart on consensus failure `wrong Block.Header.AppHash` or `wrong Block.Header.LastResultsHash`
 - Discord notify on any other consensus failure
 - Discord notify if no new block was processed in given period of time
 
