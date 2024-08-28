@@ -41,9 +41,13 @@ public class StartCommand
 
         _logWatcherService.OnConsensusFailure += (type, message) =>
         {
+            _logger.LogDebug("Starting to process consensus failure");
             isProcessingNodeFailure = true;
-            _ = HandleConsensusFailureAsync(type, message);
-            isProcessingNodeFailure = false;
+            _ = HandleConsensusFailureAsync(type, message).ContinueWith(_ =>
+            {
+                isProcessingNodeFailure = false;
+                _logger.LogDebug("Finished processing consensus failure");
+            });
         };
 
         _logWatcherService.OnNewBlockHeight += HandleNewBlock;
