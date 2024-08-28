@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using SecretKeeper.Models;
 using SecretKeeper.Services;
+using System.Runtime.InteropServices;
 
 namespace SecretKeeper.Commands;
 public class StartCommand
@@ -36,7 +37,15 @@ public class StartCommand
 
         _logger.LogInformation("Starting to watch node...");
 
-        _logWatcherService.OnConsensusFailure += HandleConsensusFailure;
+        bool isProcessingNodeFailure = false;
+
+        _logWatcherService.OnConsensusFailure += (type, message) =>
+        {
+            isProcessingNodeFailure = true;
+            _ = HandleConsensusFailureAsync(type, message);
+            isProcessingNodeFailure = false;
+        };
+
         _logWatcherService.OnNewBlockHeight += HandleNewBlock;
 
         _logWatcherService.StartWatching(service);
@@ -47,6 +56,11 @@ public class StartCommand
 
         while (await timer.WaitForNextTickAsync())
         {
+            if(isProcessingNodeFailure)
+            {
+                continue;
+            }
+
             var blockDelay = DateTimeOffset.UtcNow - _logWatcherService.LastBlockSeenAt;
             if (blockDelay.TotalSeconds > maxSecondsWithoutBlock)
             {
@@ -54,35 +68,37 @@ public class StartCommand
 
                 if (!hasSent)
                 {
-                    await _notifierService.SendNotificationAsync($"Node Desync", $"No new block processed in {Math.Round(blockDelay.TotalSeconds, 1)} seconds");
+                    await _notifierService.SendNotificationAsync($"Node Desync", $"No new block processed in {Math.Round(blockDelay.TotalSeconds, 1)} seconds", true);
                     hasSent = true;
                 }
             }
             else if (hasSent)
             {
-                await _notifierService.SendNotificationAsync($"Issue Resolved", "New block has been processed");
+                await _notifierService.SendNotificationAsync($"Issue Resolved", "New block has been processed", false);
                 hasSent = false;
             }
         }
     }
 
-    private void HandleConsensusFailure(ConsensusFailureType type, string message)
+    private async Task HandleConsensusFailureAsync(ConsensusFailureType type, string message)
     {
         _logger.LogWarning("Consensus failure occured: {type}", type);
 
         switch (type)
         {
             case ConsensusFailureType.SGX_ERROR_BUSY:
-                Task.Run(RestartNodeAsync);
+                await _notifierService.SendNotificationAsync("SGX Busy Consensus Failure", "Restarting node...", false);
+                await RestartNodeAsync();
                 break;
             case ConsensusFailureType.INVALID_APPHASH:
-                Task.Run(RollbackAndRestartAsync);
+                await _notifierService.SendNotificationAsync("Invalid AppHash Consensus Failure", "Rollbacking and restarting node...", false);
+                await RollbackAndRestartAsync();
                 break;
             case ConsensusFailureType.SOFTWARE_UPGRADE:
-                Task.Run(async () => await _notifierService.SendNotificationAsync("REQUIRE SOFTWARE UPGRADE", message));
+                await _notifierService.SendNotificationAsync("REQUIRE SOFTWARE UPGRADE", message, true);
                 break;
             default:
-                Task.Run(async () => await _notifierService.SendNotificationAsync("Unhandled Consensus Failure", message));
+                await _notifierService.SendNotificationAsync("Unhandled Consensus Failure", message, true);
                 break;
         }
     }
@@ -100,7 +116,7 @@ public class StartCommand
         catch(Exception ex)
         {
             _logger.LogCritical(ex, "Exception occured while restarting node");
-            await _notifierService.SendNotificationAsync("Restarting Node Failed", ex.Message);
+            await _notifierService.SendNotificationAsync("Restarting Node Failed", ex.Message, true);
         }
     }
 
@@ -119,7 +135,7 @@ public class StartCommand
         catch(Exception ex)
         {
             _logger.LogCritical(ex, "Exception occured while rollbacking and restarting node");
-            await _notifierService.SendNotificationAsync("Rollback and Restart failed", ex.Message);
+            await _notifierService.SendNotificationAsync("Rollback and Restart failed", ex.Message, true);
         }
     }
 

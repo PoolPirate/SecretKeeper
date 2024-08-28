@@ -82,6 +82,6 @@ public partial class LogWatcherService
     [GeneratedRegex("executed block height=(\\d*)")]
     private static partial Regex BlockProcessedRegex();
 
-    [GeneratedRegex("CONSENSUS FAILURE!!! err=(\\w* |\".*\")")]
+    [GeneratedRegex("CONSENSUS FAILURE!!! err=(\"[^\"]*\")")]
     private static partial Regex ConsensusFailureMessage();
 }

@@ -13,7 +13,7 @@ public class NotifierService
         _discordUserId = userId;
     }
 
-    public async Task SendNotificationAsync(string title, string message)
+    public async Task SendNotificationAsync(string title, string message, bool isHighPriority)
     {
         if(_client is null)
         {
@@ -21,7 +21,7 @@ public class NotifierService
         }
 
         await _client.SendMessageAsync(
-            _discordUserId.HasValue ? MentionUtils.MentionUser(_discordUserId.Value) : null,
+            isHighPriority && _discordUserId.HasValue ? MentionUtils.MentionUser(_discordUserId.Value) : null,
             embeds: [
                 new EmbedBuilder()
                     .WithTitle("Notification from SecretKeeper")
