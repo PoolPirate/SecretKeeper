@@ -57,6 +57,14 @@ public partial class LogWatcherService
             HandleConsensusFailure(consensusFailureMatch.Groups[1].Value);
             return;
         }
+
+        var consensusFailureCodeMatch = ConsensusFailureCode().Match(message);
+
+        if (consensusFailureCodeMatch.Success)
+        {
+            HandleConsensusFailure(consensusFailureCodeMatch.Groups[1].Value);
+            return;
+        }
     }
 
     private void HandleConsensusFailure(string message)
@@ -84,4 +92,7 @@ public partial class LogWatcherService
 
     [GeneratedRegex("CONSENSUS FAILURE!!! err=(\"[^\"]*\")")]
     private static partial Regex ConsensusFailureMessage();
+
+    [GeneratedRegex("CONSENSUS FAILURE!!! err=(\\S*)")]
+    private static partial Regex ConsensusFailureCode();
 }
