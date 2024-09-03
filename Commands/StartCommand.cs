@@ -43,8 +43,15 @@ public class StartCommand
         {
             _logger.LogDebug("Starting to process consensus failure");
             isProcessingNodeFailure = true;
-            _ = HandleConsensusFailureAsync(type, message).ContinueWith(_ =>
+            _ = HandleConsensusFailureAsync(type, message).ContinueWith(async handleTask =>
             {
+                int extraDelay = handleTask.Result switch
+                {
+                    ConsensusFailureType.INVALID_APPHASH => 120000,
+                    _ => 0
+                };
+                await Task.Delay(extraDelay);
+
                 isProcessingNodeFailure = false;
                 _logger.LogDebug("Finished processing consensus failure");
             });
@@ -84,7 +91,7 @@ public class StartCommand
         }
     }
 
-    private async Task HandleConsensusFailureAsync(ConsensusFailureType type, string message)
+    private async Task<ConsensusFailureType> HandleConsensusFailureAsync(ConsensusFailureType type, string message)
     {
         _logger.LogWarning("Consensus failure occured: {type}", type);
 
@@ -105,6 +112,8 @@ public class StartCommand
                 await _notifierService.SendNotificationAsync("Unhandled Consensus Failure", message, true);
                 break;
         }
+
+        return type;
     }
 
     private async Task RestartNodeAsync()
