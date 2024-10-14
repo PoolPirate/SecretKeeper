@@ -11,7 +11,7 @@ public partial class LogWatcherService
     public DateTimeOffset LastBlockSeenAt;
 
     public event Action<ulong>? OnNewBlockHeight;
-    public event Action<ConsensusFailureType, string>? OnConsensusFailure;
+    public event Action<NodeFailureType, string>? OnNodeFailure;
 
     public LogWatcherService(SystemdService systemdService, ILogger<LogWatcherService> logger)
     {
@@ -65,26 +65,50 @@ public partial class LogWatcherService
             HandleConsensusFailure(consensusFailureCodeMatch.Groups[1].Value);
             return;
         }
+
+        var panicMatch = PanicRegex().Match(message);
+
+        if (panicMatch.Success)
+        {
+            HandlePanic(panicMatch.Groups[1].Value);
+            return;
+        }
     }
 
     private void HandleConsensusFailure(string message)
     {
         if (message.Contains("SGX_ERROR_BUSY"))
         {
-            OnConsensusFailure?.Invoke(ConsensusFailureType.SGX_ERROR_BUSY, message);
+            OnNodeFailure?.Invoke(NodeFailureType.SGX_ERROR_BUSY, message);
+        }
+        else if(message.Contains("SGX_ERROR_ENCLAVE_CRASHED"))
+        {
+            OnNodeFailure?.Invoke(NodeFailureType.SGX_ERROR_ENCLAVE_CRASHED, message);
         }
         else if (message.Contains("wrong Block.Header.AppHash") || message.Contains("wrong Block.Header.LastResultsHash"))
         {
-            OnConsensusFailure?.Invoke(ConsensusFailureType.INVALID_APPHASH, message);
+            OnNodeFailure?.Invoke(NodeFailureType.INVALID_APPHASH, message);
         }
         else if (message.Contains("UPGRADE"))
         {
-            OnConsensusFailure?.Invoke(ConsensusFailureType.SOFTWARE_UPGRADE, message);
+            OnNodeFailure?.Invoke(NodeFailureType.SOFTWARE_UPGRADE, message);
         }
         else
         {
-            OnConsensusFailure?.Invoke(ConsensusFailureType.UNKNOWN, message);
+            OnNodeFailure?.Invoke(NodeFailureType.UNKNOWN_CONSENSUS_FAILURE, message);
         } 
+    }
+
+    private void HandlePanic(string message)
+    {
+        if (message.Contains("couldn't find validators"))
+        {
+            OnNodeFailure?.Invoke(NodeFailureType.VALIDATORS_NOT_FOUND, message);
+        }
+        else
+        {
+            OnNodeFailure?.Invoke(NodeFailureType.UNKNOWN_PANIC, message);
+        }
     }
 
     [GeneratedRegex("executed block height=(\\d*)")]
@@ -95,4 +119,7 @@ public partial class LogWatcherService
 
     [GeneratedRegex("CONSENSUS FAILURE!!! err=(\\S*)")]
     private static partial Regex ConsensusFailureCode();
+
+    [GeneratedRegex("panic: (.*):")]
+    private static partial Regex PanicRegex();
 }

@@ -19,9 +19,14 @@ public class SecretdService
         var args = MakeArgs();
         args.Add("rollback");
 
-        var cmd = await Cli.Wrap(_secretdPath)
+        await Cli.Wrap(_secretdPath)
             .WithArguments(args)
             .ExecuteBufferedAsync();
+    }
+
+    public async Task ResetAsync()
+    {
+
     }
 
     private List<string> MakeArgs()

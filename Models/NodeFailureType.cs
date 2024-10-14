@@ -1,0 +1,11 @@
+﻿namespace SecretKeeper.Models;
+public enum NodeFailureType
+{
+    SGX_ERROR_BUSY,
+    SGX_ERROR_ENCLAVE_CRASHED,
+    INVALID_APPHASH,
+    SOFTWARE_UPGRADE,
+    VALIDATORS_NOT_FOUND,
+    UNKNOWN_PANIC,
+    UNKNOWN_CONSENSUS_FAILURE
+}

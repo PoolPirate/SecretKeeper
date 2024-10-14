@@ -39,21 +39,21 @@ public class StartCommand
 
         bool isProcessingNodeFailure = false;
 
-        _logWatcherService.OnConsensusFailure += (type, message) =>
+        _logWatcherService.OnNodeFailure += (type, message) =>
         {
-            _logger.LogDebug("Starting to process consensus failure");
+            _logger.LogDebug("Starting to process node failure");
             isProcessingNodeFailure = true;
-            _ = HandleConsensusFailureAsync(type, message).ContinueWith(async handleTask =>
+            _ = HandleNodeFailureAsync(type, message).ContinueWith(async handleTask =>
             {
                 int extraDelay = handleTask.Result switch
                 {
-                    ConsensusFailureType.INVALID_APPHASH => 120000,
+                    NodeFailureType.INVALID_APPHASH => 120000,
                     _ => 0
                 };
                 await Task.Delay(extraDelay);
 
                 isProcessingNodeFailure = false;
-                _logger.LogDebug("Finished processing consensus failure");
+                _logger.LogDebug("Finished processing node failure");
             });
         };
 
@@ -91,25 +91,39 @@ public class StartCommand
         }
     }
 
-    private async Task<ConsensusFailureType> HandleConsensusFailureAsync(ConsensusFailureType type, string message)
+    private async Task<NodeFailureType> HandleNodeFailureAsync(NodeFailureType type, string message)
     {
         _logger.LogWarning("Consensus failure occured: {type}", type);
 
         switch (type)
         {
-            case ConsensusFailureType.SGX_ERROR_BUSY:
+            case NodeFailureType.SGX_ERROR_BUSY:
                 await _notifierService.SendNotificationAsync("SGX Busy Consensus Failure", "Restarting node...", false);
                 await RestartNodeAsync();
                 break;
-            case ConsensusFailureType.INVALID_APPHASH:
+            case NodeFailureType.SGX_ERROR_ENCLAVE_CRASHED:
+                await _notifierService.SendNotificationAsync("SGX Enclave Crashed Consensus Failure", "Restarting node...", false);
+                await RestartNodeAsync();
+                break;
+            case NodeFailureType.INVALID_APPHASH:
                 await _notifierService.SendNotificationAsync("Invalid AppHash Consensus Failure", "Rollbacking and restarting node...", false);
                 await RollbackAndRestartAsync();
                 break;
-            case ConsensusFailureType.SOFTWARE_UPGRADE:
+            case NodeFailureType.SOFTWARE_UPGRADE:
                 await _notifierService.SendNotificationAsync("REQUIRE SOFTWARE UPGRADE", message, true);
                 break;
-            default:
+            case NodeFailureType.UNKNOWN_PANIC:
+                await _notifierService.SendNotificationAsync("Unhandled Node Panic", message, true);
+                break;
+            case NodeFailureType.UNKNOWN_CONSENSUS_FAILURE:
                 await _notifierService.SendNotificationAsync("Unhandled Consensus Failure", message, true);
+                break;
+            //case NodeFailureType.VALIDATORS_NOT_FOUND:
+            //    await _notifierService.SendNotificationAsync("Validators not found panic", "Resetting to snapshot and restarting node...", false);
+            //    await ResetToSnapshotAndRestartAsync();
+            //    break;
+            default:
+                await _notifierService.SendNotificationAsync("Unhandled Node Failure", message, true);
                 break;
         }
 
@@ -149,6 +163,27 @@ public class StartCommand
         {
             _logger.LogCritical(ex, "Exception occured while rollbacking and restarting node");
             await _notifierService.SendNotificationAsync("Rollback and Restart failed", ex.Message, true);
+        }
+    }
+
+    private async Task ResetToSnapshotAndRestartAsync()
+    {
+        _logger.LogInformation("Resetting to snapshot and restarting ndoe...");
+
+        try
+        {
+            await _systemdService.StopService(_nodeService);
+            await Task.Delay(5000);
+
+
+
+            await Task.Delay(5000);
+            await _systemdService.StartService(_nodeService);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogCritical(ex, "Exception occured while resetting and restarting node");
+            await _notifierService.SendNotificationAsync("Reset and Restart failed", ex.Message, true);
         }
     }
 
