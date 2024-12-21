@@ -5,11 +5,13 @@ namespace SecretKeeper.Services;
 public class NotifierService
 {
     private DiscordWebhookClient? _client;
+    private string? _webhookUserName;
     private ulong? _discordUserId;
 
-    public void InitializeWebhookUrl(string webhookUrl, ulong? userId)
+    public void InitializeWebhookUrl(string webhookUrl, string? webhookUsername, ulong? userId)
     {
         _client = new DiscordWebhookClient(webhookUrl);
+        _webhookUserName = webhookUsername;
         _discordUserId = userId;
     }
 
@@ -23,11 +25,23 @@ public class NotifierService
         await _client.SendMessageAsync(
             isHighPriority && _discordUserId.HasValue ? MentionUtils.MentionUser(_discordUserId.Value) : null,
             embeds: [
-                new EmbedBuilder()
+                CreateEmbed()
                     .WithTitle("Notification from SecretKeeper")
                     .AddField(title, message)
                     .Build()
             ]
         );
+    }
+
+    private EmbedBuilder CreateEmbed()
+    {
+        var builder = new EmbedBuilder();
+
+        if (_webhookUserName is not null)
+        {
+            builder.WithAuthor(_webhookUserName);
+        }
+
+        return builder;
     }
 }

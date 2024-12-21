@@ -21,6 +21,7 @@ Basic resiliency daemon around a [Secret Network](https://github.com/scrtlabs/Se
 --secretd-home /home/node/.secretd #Path to your secretd home (optional, will fallback to default)
 --discord-user-id  #User id on discord (optional)
 --webhook-url #Discord webhook url (optional)
+--webhook-username #Username of the webhook (optional)
 --max-seconds-without-block #Maximum seconds without a block before a notification is sent
 ```
 

@@ -26,13 +26,16 @@ public class StartCommand
     }
 
     [Command("start")]
-    public async Task StartAsync(string secretd, string service, string? secretdHome = null, string? webhookUrl = null, ulong? discordUserId = null, int maxSecondsWithoutBlock = 100)
+    public async Task StartAsync(string secretd, string service, 
+        string? secretdHome = null, 
+        string? webhookUrl = null, string? webhookUsername = null, ulong? discordUserId = null, 
+        int maxSecondsWithoutBlock = 100)
     {
         _nodeService = service;
         _secretdService.Initialize(secretd, secretdHome);
         if (webhookUrl is not null)
         {
-            _notifierService.InitializeWebhookUrl(webhookUrl, discordUserId);
+            _notifierService.InitializeWebhookUrl(webhookUrl, webhookUsername, discordUserId);
         }
 
         _logger.LogInformation("Starting to watch node...");
@@ -163,27 +166,6 @@ public class StartCommand
         {
             _logger.LogCritical(ex, "Exception occured while rollbacking and restarting node");
             await _notifierService.SendNotificationAsync("Rollback and Restart failed", ex.Message, true);
-        }
-    }
-
-    private async Task ResetToSnapshotAndRestartAsync()
-    {
-        _logger.LogInformation("Resetting to snapshot and restarting ndoe...");
-
-        try
-        {
-            await _systemdService.StopService(_nodeService);
-            await Task.Delay(5000);
-
-
-
-            await Task.Delay(5000);
-            await _systemdService.StartService(_nodeService);
-        }
-        catch(Exception ex)
-        {
-            _logger.LogCritical(ex, "Exception occured while resetting and restarting node");
-            await _notifierService.SendNotificationAsync("Reset and Restart failed", ex.Message, true);
         }
     }
 
