@@ -24,11 +24,6 @@ public class SecretdService
             .ExecuteBufferedAsync();
     }
 
-    public async Task ResetAsync()
-    {
-
-    }
-
     private List<string> MakeArgs()
     {
         var args = new List<string>();
