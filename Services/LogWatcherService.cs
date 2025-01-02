@@ -111,7 +111,7 @@ public partial class LogWatcherService
         }
     }
 
-    [GeneratedRegex("executed block height=(\\d*)")]
+    [GeneratedRegex("executed block app_hash=\\w{64} height=(\\d+)")]
     private static partial Regex BlockProcessedRegex();
 
     [GeneratedRegex("CONSENSUS FAILURE!!! err=(\"[^\"]*\")")]
