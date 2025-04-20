@@ -77,7 +77,7 @@ public partial class LogWatcherService
 
     private void HandleConsensusFailure(string message)
     {
-        if (message.Contains("SGX_ERROR_BUSY"))
+        if (message.Contains("SGX_ERROR_BUSY") || message.Contains("error submitting validator set to enclave"))
         {
             OnNodeFailure?.Invoke(NodeFailureType.SGX_ERROR_BUSY, message);
         }
@@ -85,7 +85,9 @@ public partial class LogWatcherService
         {
             OnNodeFailure?.Invoke(NodeFailureType.SGX_ERROR_ENCLAVE_CRASHED, message);
         }
-        else if (message.Contains("wrong Block.Header.AppHash") || message.Contains("wrong Block.Header.LastResultsHash"))
+        else if (message.Contains("wrong Block.Header.AppHash") 
+            || message.Contains("wrong Block.Header.LastResultsHash")
+            || message.Contains("invalid proof for encrypted random"))
         {
             OnNodeFailure?.Invoke(NodeFailureType.INVALID_APPHASH, message);
         }
